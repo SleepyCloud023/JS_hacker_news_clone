@@ -16,9 +16,9 @@ const template = `
     <div class="bg-gray-600 min-h-screen">
         <div class="bg-white text-xl">
             <div class="mx-auto px-4">
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center py-6">
                     <div class="flex justify-start">
-                        <h1 class="font-extrabold">Hacker News</h1>
+                        <h1 class="font-extrabold" style="font-size:40px;">Hacker News</h1>
                     </div>
                     <div class="justify-end items-center">
                         <a href="{{__prev_page__}}" class="text-gray-500">
@@ -42,7 +42,6 @@ function getData(url){
     ajax.send();
     return JSON.parse(ajax.response);
 }
-
 function newsMain(){
     let next_template = template;
     const newsFeed = getData(HackerNews_URL);
@@ -52,14 +51,30 @@ function newsMain(){
     let newsList = [];
 
     for (let i = (store.currentPage-1)*10; i < store.currentPage*10 && i < newsFeed.length; i++) {
-        const li = `
-        <li>
-            <a href="${show_prefix}${newsFeed[i].id}">
-                ${newsFeed[i].title} (${newsFeed[i].comments_count})}
-            </a>
-        </li>
+        const newsTitle = `
+        <div class="p-6 mt-6 bg-white rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
+            <div class="flex">
+                <div class="flex-auto">
+                    <a href=${show_prefix}${newsFeed[i].id}>
+                        ${newsFeed[i].title};
+                    </a>
+                </div>
+                <div class="text-center text-sm">
+                    <div class="w-8 px-0 py-1 text-white bg-green-300 rounded-lg">
+                        ${newsFeed[i].comments_count}
+                    </div>
+                </div>
+            </div>
+            <div class"flex mt-3>
+                <div class="grid grid-cols-3 text-sm text-gray-500">
+                    <div><i class="fas fa-user mr-1"> ${newsFeed[i].user}</i></div>
+                    <div><i class="fas fa-heart mr-1"> ${newsFeed[i].points}</i></div>
+                    <div><i class="far fa-clock mr-1"> ${newsFeed[i].time_ago}</i></div>
+                </div>
+            </div>
+        </div>
         `;
-        newsList.push(li);
+        newsList.push(newsTitle);
     };
     next_template = next_template.replace('{{__news_feed__}}', newsList.join(''));
     next_template = next_template.replace('{{__prev_page__}}', `${page_prefix}${prevPage}`);
