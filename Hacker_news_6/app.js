@@ -10,6 +10,8 @@ const show_prefix = '#/show/';
 
 const store = {
     currentPage : 1,
+    feeds: [],
+    feed_history: new Map(),
 }
 
 const template = `
@@ -42,17 +44,36 @@ function getData(url){
     ajax.send();
     return JSON.parse(ajax.response);
 }
+
+function init_history(feeds){
+    for (let i = 0; i < feeds.length; i++) {
+        store.feed_history.set(feeds[i].id, false);
+    }
+};
+
 function newsMain(){
     let next_template = template;
-    const newsFeed = getData(HackerNews_URL);
+    let newsFeed = store.feeds;
+    
+    if (newsFeed.length === 0){
+        store.feeds = newsFeed = getData(HackerNews_URL);
+        init_history(newsFeed);
+    }
+    
     const prevPage = store.currentPage > 1 ? store.currentPage-1 : 1;
     const lastPageNumber = 1 + parseInt((newsFeed.length-1)/10);
     const nextPage = store.currentPage < lastPageNumber ? store.currentPage + 1 : store.currentPage;
     let newsList = [];
 
+    console.log(store.feed_history);
+
     for (let i = (store.currentPage-1)*10; i < store.currentPage*10 && i < newsFeed.length; i++) {
+        const id = newsFeed[i].id;
+        const is_read = store.feed_history.get(id);
+        console.log(is_read);
+        const news_color = is_read? 'text-blue-600' : '';
         const newsTitle = `
-        <div class="p-6 mt-6 bg-white rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
+        <div class="${news_color} p-6 mt-6 bg-white rounded-lg shadow-md transition-colors duration-500 hover:bg-green-100">
             <div class="flex">
                 <div class="flex-auto">
                     <a href=${show_prefix}${newsFeed[i].id}>
@@ -84,8 +105,13 @@ function newsMain(){
 };
 
 function newsDetail(){
-    const id = location.hash.substring(show_prefix.length);
+    const id = Number(location.hash.substring(show_prefix.length));
     const newsContent = getData(newsItem_URL.replace('@id', id));
+
+    store.feed_history.set(id, true);
+    console.log(`디테일 페이지 id: ${id}`);
+    console.log(`히스토리: ${store.feed_history}`);
+    
     let detail_template = `
         <div class="bg-gray-600 min-h-screen pb-8">
             <div class="bg-white text-xl">
@@ -140,9 +166,6 @@ function newsDetail(){
         return comment_list.join('');
     };
 
-    console.log(newsContent.comments);
-    // console.log(makeComment(newsContent.comments));
-
     container.innerHTML = detail_template.replace('{{__comments__}}', makeComment(newsContent.comments));
     // container.innerHTML = detail_template;
 };
@@ -150,12 +173,10 @@ function newsDetail(){
 function router(){
     const routePath = location.hash;
     if (routePath === '') {
-        // console.log('start');
         newsMain();
     }
     else if(routePath.indexOf(page_prefix) >= 0){
         store.currentPage = Number(routePath.substring(page_prefix.length));
-        console.log(store.currentPage);
         newsMain();
     }
     else{
