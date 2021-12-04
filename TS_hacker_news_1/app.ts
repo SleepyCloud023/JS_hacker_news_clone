@@ -8,37 +8,37 @@ const newsItem_URL = 'https://api.hnpwa.com/v0/item/@id.json';
 const page_prefix = '#/page/';
 const show_prefix = '#/show/';
 
-type News = {
-    id: number;
-    user: string;
-    time: number;
-    time_ago: string;
-    comments_count: number;
-    type: string;
-    url: string;
+interface News {
+    readonly id: number;
+    readonly user: string;
+    readonly time: number;
+    readonly time_ago: string;
+    readonly comments_count: number;
+    readonly type: string;
+    readonly url: string;
 }
 
-type NewsFeed = News & {
-    title: string;
-    points: number;
-    domain: string;
+interface NewsFeed extends News {
+    readonly title: string;
+    readonly points: number;
+    readonly domain: string;
 }
 
-type NewsDetail = News & {
-    title: string;
-    points: number;
-    content: string;
-    comments: NewsComment[];
-    domain: string;
+interface NewsDetail extends News {
+    readonly title: string;
+    readonly points: number;
+    readonly content: string;
+    readonly comments: NewsComment[];
+    readonly domain: string;
 }
 
-type NewsComment = News & {
-    content: string;
-    comments: NewsComment[];
-    level: number;
+interface NewsComment extends News {
+    readonly content: string;
+    readonly comments: NewsComment[];
+    readonly level: number;
 }
 
-type Store = {
+interface Store {
     currentPage: number;
     feeds: NewsFeed[];
     feed_history: Map<number, boolean>;
@@ -77,17 +77,46 @@ const template = `
     </div>
 `
 
-function getData<AjaxResponse>(url: string): AjaxResponse {
-    ajax.open('GET', url, false);
-    ajax.send();
-    return JSON.parse(ajax.response);
+class Api {
+    protected url: string;
+    protected ajax: XMLHttpRequest;
+
+    constructor(url: string){
+        this.url = url;
+        this.ajax = new XMLHttpRequest();
+    }
+
+    protected getRequest<AjaxResponse>(): AjaxResponse {
+        ajax.open('GET', this.url, false);
+        ajax.send();
+        return JSON.parse(ajax.response);
+    }
+}
+
+class NewsFeedApi extends Api {
+    constructor() {
+        super(HackerNews_URL);
+    }
+    getData(){
+        return this.getRequest<NewsFeed[]>();
+    }
+}
+
+class NewsDetailApi extends Api {
+    constructor(id: number) {
+        const FullNewsItem = newsItem_URL.replace('@id', String(id));
+        super(FullNewsItem);
+    }
+    getData(){
+        return this.getRequest<NewsDetail>();
+    }
 }
 
 function init_history(feeds: NewsFeed[]): void {
     for (let i = 0; i < feeds.length; i++) {
         store.feed_history.set(feeds[i].id, false);
     }
-};
+}
 
 function check_empty(container: HTMLElement | null, replaceHTML: string): void {
     if (container) {
@@ -99,11 +128,12 @@ function check_empty(container: HTMLElement | null, replaceHTML: string): void {
 }
 
 function newsMain(): void {
+    const newsFeedApi = new NewsFeedApi();
     let next_template = template;
     let newsFeed = store.feeds;
     
     if (newsFeed.length === 0){
-        store.feeds = newsFeed = getData<NewsFeed[]>(HackerNews_URL);
+        store.feeds = newsFeed = newsFeedApi.getData();
         // store.feeds = newsFeed = getData(HackerNews_URL);
         init_history(newsFeed);
     }
@@ -154,7 +184,8 @@ function newsMain(): void {
 
 function newsDetail(){
     const id = Number(location.hash.substring(show_prefix.length));
-    const newsContent = getData<NewsDetail>(newsItem_URL.replace('@id', String(id)));
+    const newsDetailApi = new NewsDetailApi(id);
+    const newsContent = newsDetailApi.getData();
 
     store.feed_history.set(id, true);
     console.log(`디테일 페이지 id: ${id}`);
