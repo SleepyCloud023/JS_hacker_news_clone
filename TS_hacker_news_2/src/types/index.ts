@@ -30,12 +30,6 @@ export interface NewsComment extends News {
     readonly level: number;
 }
 
-export interface Store {
-    currentPage: number;
-    feeds: NewsFeed[];
-    feed_history: Map<number, boolean>;
-}
-
 export interface RouteTable {
     path: string;
     page: View;

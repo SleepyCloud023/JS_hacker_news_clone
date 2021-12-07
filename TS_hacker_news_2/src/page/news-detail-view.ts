@@ -1,10 +1,11 @@
 import { View, NewsDetailApi, NewsFeedApi } from '../core';
 import { page_prefix, show_prefix } from '../config';
 import { NewsDetail, NewsComment } from '../types';
+import {Store} from '../store';
 
 export default class NewsDetailView extends View{
 
-    constructor(containerId: string) {
+    constructor(containerId: string, store: Store) {
         const originTemplate = `
             <div class="bg-gray-600 min-h-screen pb-8">
                 <div class="bg-white text-xl">
@@ -33,27 +34,25 @@ export default class NewsDetailView extends View{
                 </div>
             </div>
         `;
-        super(containerId, originTemplate);
+        super(containerId, originTemplate, store);
     }
 
-    render() {
+    async render(): Promise<void> {
         const id = Number(location.hash.substring(show_prefix.length));
         const newsDetailApi = new NewsDetailApi(id);
-        newsDetailApi.getData((newsContent: NewsDetail) => {
-            const {title, content, comments} = newsContent;
-    
-            window.store.feed_history.set(id, true);
-            // console.log(`디테일 페이지 id: ${id}`);
-            // console.log(`히스토리: ${store.feed_history}`);
-            
-            this.replaceHtml('comments', this.makeComment(comments));
-            this.replaceHtml('title', title);
-            this.replaceHtml('content', content);
-            this.replaceHtml('current_page', `${window.store.currentPage}`);
-            this.updateView();
-            // container.innerHTML = detail_template;
-        });
-        // const newsContent: NewsDetail = newsDetailApi.getData();
+        const newsContent: NewsDetail = await newsDetailApi.getData();
+        const {title, content, comments} = newsContent;
+
+        this.store.readFeed(newsContent);
+        // console.log(`디테일 페이지 id: ${id}`);
+        // console.log(`히스토리: ${store.feed_history}`);
+        
+        this.replaceHtml('comments', this.makeComment(comments));
+        this.replaceHtml('title', title);
+        this.replaceHtml('content', content);
+        this.replaceHtml('current_page', `${this.store.currentPage}`);
+        this.updateView();
+        // container.innerHTML = detail_template;
     }
 
     makeComment(newsComments: NewsComment[], called = 0): string {

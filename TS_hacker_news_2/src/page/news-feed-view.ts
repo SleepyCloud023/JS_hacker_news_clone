@@ -1,6 +1,7 @@
 import { View, NewsFeedApi } from "../core";
 import { NewsFeed } from "../types";
 import { page_prefix, show_prefix } from "../config";
+import { Store } from "../store";
 
 const originTemplate = `
         <div class="bg-gray-600 min-h-screen">
@@ -33,40 +34,27 @@ export default class NewsMainView extends View {
     feeds: NewsFeed[];
     api: NewsFeedApi;
 
-    constructor(containerId: string) {
-        super(containerId, originTemplate);
+    constructor(containerId: string, store: Store) {
+        super(containerId, originTemplate, store);
         this.api = new NewsFeedApi();
-        this.feeds = window.store.feeds;
-        
+        this.feeds = store.allFeeds;
     }
     
-    init_history(): void {
-        for (let i = 0; i < this.feeds.length; i++) {
-            window.store.feed_history.set(this.feeds[i].id, false);
-        }
-    }
-    
-    render() {
+    async render(): Promise<void>{
         if (this.feeds.length === 0){
-            this.api.getDataWithPromise((responseFeeds: NewsFeed[]) => {
-                window.store.feeds = this.feeds = responseFeeds;
-                this.init_history();
-                this.renderView();
-            });
+            const response = await this.api.getData();
+            this.store.setFeeds(response);
+            this.feeds = this.store.allFeeds
         }
-        this.renderView();
-    }
 
-    renderView = () => {
-        window.store.currentPage = Number(location.hash.substring(page_prefix.length) || 1) ;
-        const newsLength = this.feeds.length;
-        const prevPage = window.store.currentPage > 1 ? window.store.currentPage-1 : 1;
-        const lastPageNumber = 1 + Math.floor((newsLength-1)/10);
-        const nextPage = window.store.currentPage < lastPageNumber ? window.store.currentPage + 1 : window.store.currentPage;
+        this.store.currentPage = Number(location.hash.substring(page_prefix.length) || 1) ;
+        const prevPage = this.store.prevPage;
+        const nextPage = this.store.nextPage;
+        
     
-        for (let i = (window.store.currentPage-1)*10; i < window.store.currentPage*10 && i < newsLength; i++) {
+        for (let i = (this.store.currentPage-1)*10; i < this.store.currentPage*10 && i < this.feeds.length; i++) {
             const {id, title, comments_count, user, points, time_ago} = this.feeds[i];
-            const is_read = window.store.feed_history.get(id);
+            const is_read = this.store.isRead(id);
             // console.log(is_read);
             const news_color = is_read? 'text-blue-600' : '';
             const newsTitle = `
@@ -98,9 +86,7 @@ export default class NewsMainView extends View {
         this.replaceHtml('news_feed', this.getHtml());
         this.replaceHtml('prev_page', `${page_prefix}${prevPage}`);
         this.replaceHtml('next_page', `${page_prefix}${nextPage}`);
-        this.replaceHtml('current_page', `${window.store.currentPage}`);
+        this.replaceHtml('current_page', `${this.store.currentPage}`);
         this.updateView();
-
     }
-
 }

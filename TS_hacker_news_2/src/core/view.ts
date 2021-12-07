@@ -1,10 +1,13 @@
+import { Store } from "../store";
+
 export default abstract class View {
     template: string;
     nextViewTemplate: string;
     container: HTMLElement;
     htmlList: string[];
+    store: Store;
     
-    constructor(containerID: string, template: string) {
+    constructor(containerID: string, template: string, store: Store) {
         const containerElement = document.getElementById(containerID);
         
         if (!containerElement) {
@@ -15,6 +18,7 @@ export default abstract class View {
         this.template = template;
         this.nextViewTemplate = template;
         this.htmlList = [];
+        this.store = store;
     }
 
     updateView() {
@@ -36,5 +40,5 @@ export default abstract class View {
         this.nextViewTemplate = this.nextViewTemplate.replace(`{{__${marker}__}}`, html);
     }
     
-    abstract render(): void
+    abstract render(store: Store): void
 }
