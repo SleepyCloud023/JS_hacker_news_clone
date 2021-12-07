@@ -3,26 +3,41 @@ import {NewsItem_URL, HackerNews_URL} from '../config';
 
 class Api {
     protected url: string;
-    protected ajax: XMLHttpRequest;
+    protected xhr: XMLHttpRequest;
 
     constructor(url: string){
         this.url = url;
-        this.ajax = new XMLHttpRequest();
+        this.xhr = new XMLHttpRequest();
     }
 
-    protected getRequest<AjaxResponse>(): AjaxResponse {
-        this.ajax.open('GET', this.url, false);
-        this.ajax.send();
-        return JSON.parse(this.ajax.response);
+    protected getRequestWithXHR<AjaxResponse>(cb: (data: AjaxResponse) => void): void {
+        this.xhr.open('GET', this.url);
+        this.xhr.addEventListener('load', () =>{
+            const response_ajax = JSON.parse(this.xhr.response);
+            cb(response_ajax);
+        })
+        this.xhr.send();
     }
+    protected getRequestWithPromise <AjaxResponse>(cb: (data: AjaxResponse) => void): void {
+        fetch(this.url)
+            .then(response => response.json())
+            .then(cb)
+            .catch(() => {
+                console.log('데이터를 불러오지 못했습니다.');
+            })
+    }
+
 }
 
 export class NewsFeedApi extends Api {
     constructor() {
         super(HackerNews_URL);
     }
-    getData(): NewsFeed[]{
-        return this.getRequest<NewsFeed[]>();
+    getDataWithXHR(cb: (data: NewsFeed[]) =>void): void{
+        this.getRequestWithXHR<NewsFeed[]>(cb);
+    }
+    getDataWithPromise(cb: (data: NewsFeed[]) =>void): void{
+        this.getRequestWithPromise<NewsFeed[]>(cb);
     }
 }
 
@@ -31,7 +46,10 @@ export class NewsDetailApi extends Api {
         const FullNewsItem_URL = NewsItem_URL.replace('@id', String(id));
         super(FullNewsItem_URL);
     }
-    getData(): NewsDetail{
-        return this.getRequest<NewsDetail>();
+    getDataWithXHR(cb: (data: NewsDetail ) => void): void{
+        this.getRequestWithXHR<NewsDetail>(cb);
+    }
+    getDataWithPromise(cb: (data: NewsDetail ) => void): void{
+        this.getRequestWithPromise<NewsDetail>(cb);
     }
 }

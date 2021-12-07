@@ -1,4 +1,4 @@
-import { View, NewsDetailApi } from '../core';
+import { View, NewsDetailApi, NewsFeedApi } from '../core';
 import { page_prefix, show_prefix } from '../config';
 import { NewsDetail, NewsComment } from '../types';
 
@@ -39,19 +39,21 @@ export default class NewsDetailView extends View{
     render() {
         const id = Number(location.hash.substring(show_prefix.length));
         const newsDetailApi = new NewsDetailApi(id);
-        const newsContent: NewsDetail = newsDetailApi.getData();
-        const {title, content, comments} = newsContent;
-
-        window.store.feed_history.set(id, true);
-        // console.log(`디테일 페이지 id: ${id}`);
-        // console.log(`히스토리: ${store.feed_history}`);
-        
-        this.replaceHtml('comments', this.makeComment(comments));
-        this.replaceHtml('title', title);
-        this.replaceHtml('content', content);
-        this.replaceHtml('current_page', `${window.store.currentPage}`);
-        this.updateView();
-        // container.innerHTML = detail_template;
+        newsDetailApi.getData((newsContent: NewsDetail) => {
+            const {title, content, comments} = newsContent;
+    
+            window.store.feed_history.set(id, true);
+            // console.log(`디테일 페이지 id: ${id}`);
+            // console.log(`히스토리: ${store.feed_history}`);
+            
+            this.replaceHtml('comments', this.makeComment(comments));
+            this.replaceHtml('title', title);
+            this.replaceHtml('content', content);
+            this.replaceHtml('current_page', `${window.store.currentPage}`);
+            this.updateView();
+            // container.innerHTML = detail_template;
+        });
+        // const newsContent: NewsDetail = newsDetailApi.getData();
     }
 
     makeComment(newsComments: NewsComment[], called = 0): string {

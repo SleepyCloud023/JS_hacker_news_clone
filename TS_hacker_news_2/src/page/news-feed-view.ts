@@ -2,12 +2,7 @@ import { View, NewsFeedApi } from "../core";
 import { NewsFeed } from "../types";
 import { page_prefix, show_prefix } from "../config";
 
-export default class NewsMainView extends View {
-    feeds: NewsFeed[];
-    api: NewsFeedApi;
-
-    constructor(containerId: string) {
-        const originTemplate = `
+const originTemplate = `
         <div class="bg-gray-600 min-h-screen">
             <div class="bg-white text-xl">
                 <div class="mx-auto px-4">
@@ -34,23 +29,35 @@ export default class NewsMainView extends View {
         </div>
         `;
 
+export default class NewsMainView extends View {
+    feeds: NewsFeed[];
+    api: NewsFeedApi;
+
+    constructor(containerId: string) {
         super(containerId, originTemplate);
         this.api = new NewsFeedApi();
         this.feeds = window.store.feeds;
         
-        if (this.feeds.length === 0){
-            window.store.feeds = this.feeds = this.api.getData();
-            this.init_history();
-        }
     }
-
+    
     init_history(): void {
         for (let i = 0; i < this.feeds.length; i++) {
             window.store.feed_history.set(this.feeds[i].id, false);
         }
     }
-
+    
     render() {
+        if (this.feeds.length === 0){
+            this.api.getDataWithPromise((responseFeeds: NewsFeed[]) => {
+                window.store.feeds = this.feeds = responseFeeds;
+                this.init_history();
+                this.renderView();
+            });
+        }
+        this.renderView();
+    }
+
+    renderView = () => {
         window.store.currentPage = Number(location.hash.substring(page_prefix.length) || 1) ;
         const newsLength = this.feeds.length;
         const prevPage = window.store.currentPage > 1 ? window.store.currentPage-1 : 1;
@@ -93,6 +100,7 @@ export default class NewsMainView extends View {
         this.replaceHtml('next_page', `${page_prefix}${nextPage}`);
         this.replaceHtml('current_page', `${window.store.currentPage}`);
         this.updateView();
+
     }
 
 }
