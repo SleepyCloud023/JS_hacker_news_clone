@@ -35,5 +35,3 @@ router.addRouteInfo(show_prefix, newsDetailView);
 router.route();
 window.addEventListener('hashchange', router.route.bind(router));
 console.log('arrival test');
-
-    
